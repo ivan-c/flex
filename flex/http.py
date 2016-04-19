@@ -148,11 +148,36 @@ def _normalize_tornado_request(request):
     )
 
 
+def _normalize_flask_request(request):
+    import flask
+
+    if not all((
+        hasattr(request, '_get_current_object'),
+        callable(request._get_current_object),
+        isinstance(request._get_current_object(), flask.Request),
+    )):
+        raise TypeError("Cannot normalize this request object")
+
+    url = request.url
+    method = request.method.lower()
+    content_type = request.headers.get('Content-Type')
+    body = json.dumps(request.json)
+
+    return Request(
+        url=url,
+        body=body,
+        method=method,
+        content_type=content_type,
+        request=request,
+    )
+
+
 REQUEST_NORMALIZERS = (
     _normalize_python2_urllib_request,
     _normalize_python3_urllib_request,
     _normalize_requests_request,
     _normalize_tornado_request,
+    _normalize_flask_request,
 )
 
 
@@ -264,10 +289,32 @@ def _normalize_tornado_response(response, request=None):
     )
 
 
+def _normalize_flask_response(response, request=None):
+    import flask
+
+    if not isinstance(response, flask.Response):
+        raise TypeError("Cannot normalize this response object")
+
+    url = request.url if request is not None else None
+    status_code = response.status_code
+    content_type = response.headers.get('Content-Type')
+    content = response.get_data()
+
+    return Response(
+        request=request,
+        content=content,
+        url=url,
+        status_code=status_code,
+        content_type=content_type,
+        response=response,
+    )
+
+
 RESPONSE_NORMALIZERS = (
     _normalize_urllib_response,
     _normalize_requests_response,
     _normalize_tornado_response,
+    _normalize_flask_response,
 )
 
 
