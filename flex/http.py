@@ -15,6 +15,12 @@ try:
 except ImportError:
     _tornado_available = False
 
+_flask_available = True
+try:
+    import flask
+except ImportError:
+    _flask_available = False
+
 
 class URLMixin(object):
     @property
@@ -160,8 +166,8 @@ def _normalize_flask_request(request):
 
     url = request.url
     method = request.method.lower()
-    content_type = request.headers.get('Content-Type')
-    body = json.dumps(request.json)
+    content_type = request.content_type
+    body = json.dumps(request.get_json()) if request.data else None
 
     return Request(
         url=url,

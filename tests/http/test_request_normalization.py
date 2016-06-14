@@ -6,12 +6,12 @@ import six
 import requests
 
 from flex.http import (
-    normalize_request, _tornado_available
+    normalize_request, _tornado_available, _flask_available
 )
 
 
 #
-#  Test normalizatin of the request object from the requests library
+#  Test normalization of the request object from the requests library
 #
 def test_request_normalization(httpbin):
     raw_response = requests.post(httpbin.url + '/post')
@@ -108,3 +108,36 @@ def test_tornado_server_request_normalization(httpbin):
     assert request.content_type == 'application/json'
     assert request.url == httpbin.url + '/get?key=val'
     assert request.method == 'get'
+#
+# Test Flask request object
+#
+@pytest.mark.skipif(not _flask_available, reason="Flask not installed")
+def test_flask_request_normalization(httpbin):
+    import flask
+
+    from flask import Flask
+    app = Flask(__name__)
+
+    @app.route('/get')
+    def hello_world():
+        return flask.jsonify({})
+        # return 'Hello World!'
+
+
+    with app.test_request_context('/get?key=val', method='GET', content_type='application/json'):
+        raw_request = flask.request
+        request = normalize_request(raw_request)
+        import pdb; pdb.set_trace()
+
+        # assert request.path == '/get'
+        # assert request.content_type == 'application/json'
+        # assert request.url == httpbin.url + '/get?key=val'
+        # assert request.method == 'get'
+
+        # assert flask.request.path == '/get'
+        # assert flask.request.args['key'] == 'val'
+
+    # raw_request = tornado.httpclient.HTTPRequest(
+        # httpbin.url + '/get?key=val',
+        # headers={'Content-Type': 'application/json'}
+    # )
